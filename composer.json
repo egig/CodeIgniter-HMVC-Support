@@ -1,5 +1,5 @@
 {
-	"name" : "creasindo/codeigniter-hmvc-support",
+	"name" : "egig/codeigniter-hmvc-support",
 	"description" : "The CodeIgniter HMVC Support",
 	"license": "MIT",
 	"require": {
