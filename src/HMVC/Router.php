@@ -2,7 +2,33 @@
 
 class HMVC_Router extends CI_Router {
 
+	/**
+	 * The module
+	 *
+	 * @var array
+	 */
 	protected $module;
+
+	/**
+	 * Routing defined in index.php
+	 *
+	 * @var array
+	 */
+	protected $index_routing;
+
+	/**
+	 * Class constructor
+	 *
+	 * Runs the route mapping function.
+	 *
+	 * @return	void
+	 */
+	public function __construct($routing = NULL)
+	{
+		$this->index_routing = $routing;
+
+		parent::__construct($routing);
+	}
 
 	public function fetch_module() {
 		return $this->module;
@@ -24,8 +50,18 @@ class HMVC_Router extends CI_Router {
 		return parent::_validate_request($segments);
 	}
 
+	/**
+	 * Locate segments against modules, re-route the directory
+	 *
+	 * @return string $segments
+	 */
 	public function locate($segments)
 	{
+		// we do nothing if routing defined in index.php
+		if($this->index_routing) {
+			return;
+		}
+
 		$paths = Modules::$paths;
 		$ext = $this->config->item('controller_suffix').'.php';
 
