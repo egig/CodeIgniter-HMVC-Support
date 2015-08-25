@@ -53,7 +53,7 @@ class HMVC_Router extends CI_Router {
 	/**
 	 * Locate segments against modules, re-route the directory
 	 *
-	 * @return string $segments
+	 * @return string $segments controller/method
 	 */
 	public function locate($segments)
 	{
@@ -65,9 +65,6 @@ class HMVC_Router extends CI_Router {
 		$paths = Modules::$paths;
 		$ext = $this->config->item('controller_suffix').'.php';
 
-		//@todo user modules routes config
-
-		/* get the segments array elements */
 		list($segment1, $segment2, $segment3) = array_pad($segments, 3, NULL);
 
 		/* check modules */
@@ -75,7 +72,6 @@ class HMVC_Router extends CI_Router {
 
 			$path = rtrim($path).'/';
 			$path = static::make_path_relative(APPPATH.'controllers', $path);
-
 
 			// We need a private modules which is can't be accessed via uri
 			// so, any uri started with underscore will throws 404
@@ -87,36 +83,32 @@ class HMVC_Router extends CI_Router {
 			 // Due to compatibility with codeigniter,
 			 // Modules path checked is relative to app/controller directory
 			 // I told you to just use symfony (-__-");
+			$param = [];
 			if (is_dir($source = APPPATH.'controllers/'.$path.$segment1.'/controllers/')) {
-				
-				$this->module = $segment1;
+
+				$this->module = array_shift($segments);
 				$this->directory = $path.$segment1.'/controllers/';
 
-				/* module sub-controller exists? */
-				if($segment2 AND is_file($source.ucfirst($segment2).$ext)) {
-					return array_slice($segments, 1);
-				}
-					
-				/* module sub-directory exists? */
-				if($segment2 AND is_dir($source.$segment2.'/')) {
+				$c = count($segments);
+				while ($c-- > 0)
+				{
+					$last_segment = array_pop($segments);
+					$controller_file_name = ucfirst($last_segment).$ext;
+					$_temp_path = implode($segments, '/');
+					$_temp_path = ($_temp_path) ? $_temp_path.'/' : $_temp_path;
 
-					$source .= $segment2.'/';
-					$this->directory .= $segment2.'/';
+					if(is_file($controller_file = $source.$_temp_path.$controller_file_name)) {
 
-					/* module sub-directory controller exists? */
-					if(is_file($source.ucfirst($segment2).$ext)) {
-						return array_slice($segments, 1);
+						$this->directory .= $_temp_path;
+
+						$_wanted_segments = array_reverse($param);
+						array_unshift($_wanted_segments, $last_segment);
+
+						return $_wanted_segments;
+					} else {
+						$param[]= $last_segment;
 					}
-				
-					/* module sub-directory sub-controller exists? */
-					if($segment3 AND is_file($source.ucfirst($segment3).$ext))	{
-						return array_slice($segments, 2);
-					}
-				}
-				
-				/* module controller exists? */			
-				if(is_file($source.ucfirst($segment1).$ext)) {
-					return $segments;
+
 				}
 			}
 		}
