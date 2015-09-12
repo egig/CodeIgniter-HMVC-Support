@@ -2,7 +2,33 @@
 
 class Modules
 {
-	public static $paths = array(), $routes, $installed, $loaded, $current;
+	/**
+	 * Module paths.
+	 *
+	 * @var array
+	 */
+	public static $paths = [];
+
+	/**
+	 * Installed modules;
+	 *
+	 * @var array
+	 */
+	public static $installed;
+
+	/**
+	 * Loaded module controller
+	 *
+	 * @var array
+	 */
+	public static $loaded;
+
+	/**
+	 * Current module;
+	 *
+	 * @var string
+	 */
+	public static $current;
 
 	/**
 	 * Get module paths
@@ -24,33 +50,21 @@ class Modules
 		static::$paths = array_merge(static::$paths,(array)$path);
 	}
 
-	/** Load a module controller **/
-	public static function load($module, $controller = '')
+	/**
+	 * Get module path;
+	 *
+	 * @param 
+	 */
+	public static function get_path($module)
 	{
-		static::$current = $module;
+		static::get_installed();
 
-		if(! array_key_exists($module, static::get_installed()))
+		if(!isset(static::$installed[$module]))
 		{
-			show_error("Module $module not installed");
+			throw new InvalidArgumentException("Module $module not installed");
 		}
 
-		if($controller !== '')
-		{
-			if(!isset(static::$loaded[$module]['controllers'][$controller]))
-			{
-				require_once static::$installed[$module].'/controllers/'.ucfirst($controller).'.php';
-				static::$loaded[$module]['controllers'][$controller] = new $controller;
-			}
-			return static::$loaded[$module]['controllers'][$controller];
-		}
-
-		if(!isset(static::$loaded[$module]))
-		{
-			require_once static::$installed[$module].'/src/'.ucfirst($module).'.php';
-			static::$loaded[$module] = new $module;
-		}
-
-		return static::$loaded[$module];
+		return static::$installed[$module];
 	}
 
 	/**
@@ -61,29 +75,31 @@ class Modules
 	 * @param string $base
 	 * @return string
 	 */
-	public static function find($file, $module, $base = 'libraries') {
-
+	public static function find($file, $module, $base = 'libraries')
+	{
 		$segments = explode('/', $file);
 
 		$file = array_pop($segments);
 		$file_ext = strpos($file, '.') ? $file : $file.'.php';
 		
 		$path = ltrim(implode('/', $segments).'/', '/');	
-		$module ? $modules[$module] = $path : $modules = array();
 
+		$modules = array();
 		if ( ! empty($segments)) {
 			$modules[array_shift($segments)] = ltrim(implode('/', $segments).'/','/');
 		}
 
-		foreach (static::$paths as $path) {
-
-			foreach($modules as $module => $subpath) {		
-				$fullpath = $path.'/'.$module.'/'.trim($base,'/').'/'.$subpath;		
+		foreach (static::$paths as $path)
+		{
+			foreach($modules as $module => $subpath)
+			{	
+				$fullpath = $path.'/'.$module.'/'.trim($base,'/').'/'.$subpath;
 
 				// if file intended is a class, we'll look for ucfirst-named file
 				if (in_array($base, array('models', 'libraries'))
-					 AND is_file($found = $fullpath.ucfirst($file_ext))) {
-						return $found;
+					 AND is_file($found = $fullpath.ucfirst($file_ext)))
+				{
+					return $found;
 				}
 					
 				if (is_file($found = $fullpath.$file_ext)) {
@@ -96,7 +112,7 @@ class Modules
 	}
 
 	/**
-	 * Get assoc array of installed module name and their path.
+	 * Get associative array of installed module name and their path.
 	 *
 	 * @return arrays
 	 */

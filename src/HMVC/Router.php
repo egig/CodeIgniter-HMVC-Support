@@ -3,9 +3,9 @@
 class HMVC_Router extends CI_Router {
 
 	/**
-	 * The module
+	 * Current module.
 	 *
-	 * @var array
+	 * @var string
 	 */
 	protected $module;
 
@@ -30,19 +30,30 @@ class HMVC_Router extends CI_Router {
 		parent::__construct($routing);
 	}
 
+	/**
+	 * Fetch current module.
+	 *
+	 * @return string
+	 */
 	public function fetch_module() {
 		return $this->module;
 	}
 
+	/**
+	 * {@inherit}
+	 */
 	protected function _validate_request($segments)
 	{
-		/* locate module controller */
+		// here is the router hack, we have the method: locate
+		// coming request uri is validated first by locating
+		// the controller file, then use it if it exists,
+		// use default behaviour otherwise.
 		if ($located = $this->locate($segments)) {
 			return $located;
 		}
 
-		/* use a default 404_override controller */
-		if (isset($this->routes['404_override']) AND $this->routes['404_override']) {
+		if (isset($this->routes['404_override']) AND $this->routes['404_override'])
+		{
 			$segments = explode('/', $this->routes['404_override']);
 			if ($located = $this->locate($segments)) return $located;
 		}
@@ -68,7 +79,8 @@ class HMVC_Router extends CI_Router {
 		list($segment1, $segment2, $segment3) = array_pad($segments, 3, NULL);
 
 		/* check modules */
-		foreach ($paths as $path) {
+		foreach ($paths as $path)
+		{
 
 			$path = rtrim($path).'/';
 			$path = static::make_path_relative(APPPATH.'controllers', $path);
@@ -76,20 +88,26 @@ class HMVC_Router extends CI_Router {
 			// We need a private modules which is can't be accessed via uri
 			// so, any uri started with underscore will throws 404
 			// pretty good idea, huh ?
-			if($segment1[0] === '_') {
+			if($segment1[0] === '_')
+			{
 				show_404();
 			}
 
-			 // Due to compatibility with codeigniter,
-			 // Modules path checked is relative to app/controller directory
-			 // I told you to just use symfony (-__-");
+			// Due to compatibility with codeigniter,
+			// Modules path checked is relative to app/controller directory
+			// I told you to just use symfony (-__-");
 			$param = [];
-			if (is_dir($source = APPPATH.'controllers/'.$path.$segment1.'/controllers/')) {
-
+			if (is_dir($source = APPPATH.'controllers/'.$path.$segment1.'/controllers/'))
+			{
+				// Following line is very important. Curren module assignment.
+				// this determine where the library and other file
+				// will be loaded form.
 				$this->module = array_shift($segments);
 				$this->directory = $path.$segment1.'/controllers/';
+				Modules::$current = $this->module;
 
 				$c = count($segments);
+
 				while ($c-- > 0)
 				{
 					$last_segment = array_pop($segments);
@@ -97,7 +115,8 @@ class HMVC_Router extends CI_Router {
 					$_temp_path = implode($segments, '/');
 					$_temp_path = ($_temp_path) ? $_temp_path.'/' : $_temp_path;
 
-					if(is_file($controller_file = $source.$_temp_path.$controller_file_name)) {
+					if(is_file($controller_file = $source.$_temp_path.$controller_file_name))
+					{
 
 						$this->directory .= $_temp_path;
 
@@ -106,9 +125,10 @@ class HMVC_Router extends CI_Router {
 
 						return $_wanted_segments;
 					} else {
+
+						// save param for next loop
 						$param[]= $last_segment;
 					}
-
 				}
 			}
 		}
@@ -144,6 +164,13 @@ class HMVC_Router extends CI_Router {
 		log_message('debug', 'No URI present. Default controller set.');
 	}
 
+	/**
+	 * Helper function to maka a path relative to another
+	 *
+	 * @param string $from
+	 * @param string $to
+	 * @return string
+	 */
 	public static function make_path_relative($from, $to)
 	{
 	    // some compatibility fixes for Windows paths
@@ -156,33 +183,37 @@ class HMVC_Router extends CI_Router {
 	    $to       = explode('/', $to);
 	    $relPath  = $to;
 
-	    foreach($from as $depth => $dir) {
+	    foreach($from as $depth => $dir)
+	    {
 	        // find first non-matching dir
-	        if($dir === $to[$depth]) {
+	        if($dir === $to[$depth])
+	        {
 	            // ignore this directory
 	            array_shift($relPath);
-	        } else {
+	        }
+	        else
+	        {
 	            // get number of remaining dirs to $from
 	            $remaining = count($from) - $depth;
-	            if($remaining > 1) {
+	            if($remaining > 1)
+	            {
 	                // add traversals up to first matching dir
 	                $padLength = (count($relPath) + $remaining - 1) * -1;
 	                $relPath = array_pad($relPath, $padLength, '..');
 	                break;
-	            } else {
+	            }
+	            else
+	            {
 	                $relPath[0] = './' . $relPath[0];
 	            }
 	        }
 	    }
+
 	    return implode('/', $relPath);
 	}
 
 	/**
-	 * Set directory name
-	 *
-	 * @param	string	$dir	Directory name
-	 * @param	bool	$appent	Whether we're appending rather then setting the full value
-	 * @return	void
+	 * {@inheritdoc}
 	 */
 	public function set_directory($dir, $append = FALSE)
 	{
